@@ -132,12 +132,19 @@ const ClickableImage: React.FC = () => {
 
   return (
     <img
-      src={isImageOne ? image1.toString() : image2.toString()}
+      className="w-40 h-40 mx-auto rounded"
+      src={isImageOne ? '/dark.png' : '/light.png' }
       alt="clickable"
       onClick={handleClick}
     />
   );
 };
+
+
+
+
+
+
 
 const LyricsGenerator: NextPage = () => {
   const [loading, setLoading] = useState(false);
@@ -152,7 +159,7 @@ const LyricsGenerator: NextPage = () => {
       lyricsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
-  const fetchOriginalLyrics = async (trackName, artistName) => {
+  const fetchOriginalLyrics = async (trackName: string, artistName: string) => {
     try {
       const response = await fetch(`/api/${trackName}/${artistName}`);
       if (response.ok) {
@@ -220,7 +227,6 @@ const LyricsGenerator: NextPage = () => {
     <div className="container mx-auto p-4 max-height">
       <ClickableImage />
 
-      <h1 className="text-4xl text-center font-bold mb-6">Lyrics Generator</h1>
 
       <main className="space-y-8 object-center">
         <div className="flex flex-col md:flex-row md:space-x-4">
