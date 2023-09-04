@@ -1,0 +1,467 @@
+.
+├── LICENSE
+├── README.md
+├── all_files.txt
+├── components
+│   ├── DropDown.tsx
+│   ├── Footer.tsx
+│   ├── GitHub.tsx
+│   ├── Header.tsx
+│   └── LoadingDots.tsx
+├── next-env.d.ts
+├── next.config.js
+├── package-lock.json
+├── package.json
+├── pages
+│   ├── _app.tsx
+│   ├── _document.tsx
+│   ├── api
+│   │   └── generate.ts
+│   └── index.tsx
+├── postcss.config.js
+├── public
+│   ├── 1-black.png
+│   ├── 2-black.png
+│   ├── analytics.png
+│   ├── favicon.ico
+│   ├── og-image.png
+│   ├── screenshot.png
+│   ├── vercel.svg
+│   ├── vercelLogo.png
+│   └── writingIcon.png
+├── styles
+│   ├── globals.css
+│   └── loading-dots.module.css
+├── tailwind.config.js
+├── tsconfig.json
+└── utils
+    └── OpenAIStream.ts
+
+7 directories, 31 files
+./components/LoadingDots.tsx
+import styles from "../styles/loading-dots.module.css";
+
+const LoadingDots = ({
+  color = "#000",
+  style = "small",
+}: {
+  color: string;
+  style: string;
+}) => {
+  return (
+    <span className={style == "small" ? styles.loading2 : styles.loading}>
+      <span style={{ backgroundColor: color }} />
+      <span style={{ backgroundColor: color }} />
+      <span style={{ backgroundColor: color }} />
+    </span>
+  );
+};
+
+export default LoadingDots;
+
+LoadingDots.defaultProps = {
+  style: "small",
+};
+------------------------
+./components/GitHub.tsx
+export default function Github({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      className={className}
+    >
+      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+    </svg>
+  );
+}
+------------------------
+./components/Footer.tsx
+import Link from "next/link";
+
+export default function Footer() {
+  return (
+    <footer className="text-center h-16 sm:h-20 w-full sm:pt-2 pt-4 border-t mt-5 flex sm:flex-row flex-col justify-between items-center px-3 space-y-3 sm:mb-0 mb-3">
+      <div>
+        Powered by{" "}
+        <a
+          href="https://openai.com/blog/chatgpt"
+          target="_blank"
+          rel="noreferrer"
+          className="font-bold hover:underline transition underline-offset-2"
+        >
+          ChatGPT{" "}
+        </a>
+        and{" "}
+        <a
+          href="https://vercel.com/"
+          target="_blank"
+          rel="noreferrer"
+          className="font-bold hover:underline transition underline-offset-2"
+        >
+          Vercel Edge Functions.
+        </a>
+      </div>
+      <div className="flex space-x-4 pb-4 sm:pb-0">
+        <Link
+          href="https://twitter.com/nutlope"
+          className="group"
+          aria-label="TaxPal on Twitter"
+        >
+          <svg
+            aria-hidden="true"
+            className="h-6 w-6 fill-slate-500 group-hover:fill-slate-700"
+          >
+            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0 0 22 5.92a8.19 8.19 0 0 1-2.357.646 4.118 4.118 0 0 0 1.804-2.27 8.224 8.224 0 0 1-2.605.996 4.107 4.107 0 0 0-6.993 3.743 11.65 11.65 0 0 1-8.457-4.287 4.106 4.106 0 0 0 1.27 5.477A4.073 4.073 0 0 1 2.8 9.713v.052a4.105 4.105 0 0 0 3.292 4.022 4.093 4.093 0 0 1-1.853.07 4.108 4.108 0 0 0 3.834 2.85A8.233 8.233 0 0 1 2 18.407a11.615 11.615 0 0 0 6.29 1.84" />
+          </svg>
+        </Link>
+        <Link
+          href="https://github.com/Nutlope/twitterbio"
+          className="group"
+          aria-label="TaxPal on GitHub"
+        >
+          <svg
+            aria-hidden="true"
+            className="h-6 w-6 fill-slate-500 group-hover:fill-slate-700"
+          >
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
+          </svg>
+        </Link>
+      </div>
+    </footer>
+  );
+}
+------------------------
+./components/DropDown.tsx
+import { Menu, Transition } from "@headlessui/react";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "@heroicons/react/20/solid";
+import { Fragment } from "react";
+
+function classNames(...classes: string[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+export type VibeType = "Professional" | "Casual" | "Funny";
+
+interface DropDownProps {
+  vibe: VibeType;
+  setVibe: (vibe: VibeType) => void;
+}
+
+let vibes: VibeType[] = ["Professional", "Casual", "Funny"];
+
+export default function DropDown({ vibe, setVibe }: DropDownProps) {
+  return (
+    <Menu as="div" className="relative block text-left w-full">
+      <div>
+        <Menu.Button className="inline-flex w-full justify-between items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black">
+          {vibe}
+          <ChevronUpIcon
+            className="-mr-1 ml-2 h-5 w-5 ui-open:hidden"
+            aria-hidden="true"
+          />
+          <ChevronDownIcon
+            className="-mr-1 ml-2 h-5 w-5 hidden ui-open:block"
+            aria-hidden="true"
+          />
+        </Menu.Button>
+      </div>
+
+      <Transition
+        as={Fragment}
+        enter="transition ease-out duration-100"
+        enterFrom="transform opacity-0 scale-95"
+        enterTo="transform opacity-100 scale-100"
+        leave="transition ease-in duration-75"
+        leaveFrom="transform opacity-100 scale-100"
+        leaveTo="transform opacity-0 scale-95"
+      >
+        <Menu.Items
+          className="absolute left-0 z-10 mt-2 w-full origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          key={vibe}
+        >
+          <div className="">
+            {vibes.map((vibeItem) => (
+              <Menu.Item key={vibeItem}>
+                {({ active }) => (
+                  <button
+                    onClick={() => setVibe(vibeItem)}
+                    className={classNames(
+                      active ? "bg-gray-100 text-gray-900" : "text-gray-700",
+                      vibe === vibeItem ? "bg-gray-200" : "",
+                      "px-4 py-2 text-sm w-full text-left flex items-center space-x-2 justify-between"
+                    )}
+                  >
+                    <span>{vibeItem}</span>
+                    {vibe === vibeItem ? (
+                      <CheckIcon className="w-4 h-4 text-bold" />
+                    ) : null}
+                  </button>
+                )}
+              </Menu.Item>
+            ))}
+          </div>
+        </Menu.Items>
+      </Transition>
+    </Menu>
+  );
+}
+------------------------
+./components/Header.tsx
+import Image from "next/image";
+import Link from "next/link";
+
+export default function Header() {
+  return (
+    <header className="flex justify-between items-center w-full mt-5 border-b-2 pb-7 sm:px-4 px-2">
+      <Link href="/" className="flex space-x-3">
+        <Image
+          alt="header text"
+          src="/writingIcon.png"
+          className="sm:w-12 sm:h-12 w-8 h-8"
+          width={32}
+          height={32}
+        />
+        <h1 className="sm:text-4xl text-2xl font-bold ml-2 tracking-tight">
+          twitterbio.io
+        </h1>
+      </Link>
+      <a
+        href="https://vercel.com/templates/next.js/twitter-bio"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <Image
+          alt="Vercel Icon"
+          src="/vercelLogo.png"
+          className="sm:w-8 sm:h-[27px] w-8 h-[28px]"
+          width={32}
+          height={28}
+        />
+      </a>
+    </header>
+  );
+}
+------------------------
+./pages/index.tsx
+import type { NextPage } from "next";
+import { useRef, useState } from "react";
+import Header from "../components/Header";
+import LoadingDots from "../components/LoadingDots";
+import { createParser, ParsedEvent, ReconnectInterval } from "eventsource-parser";
+
+const LyricsGenerator: NextPage = () => {
+  const [loading, setLoading] = useState(false);
+  const [topic, setTopic] = useState("");
+  const [originalLyrics, setOriginalLyrics] = useState("");
+  const [generatedLyrics, setGeneratedLyrics] = useState("");
+
+  const lyricsRef = useRef<null | HTMLDivElement>(null);
+
+  const scrollToLyrics = () => {
+    if (lyricsRef.current !== null) {
+      lyricsRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const generateLyrics = async (e: any) => {
+    e.preventDefault();
+    setGeneratedLyrics("");
+    setLoading(true);
+
+    const prompt = `Rewrite the lyrics of this song to revolve around the topic "${topic}". The original lyrics are: ${originalLyrics}`;
+
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+
+    const data = response.body;
+    if (!data) {
+      return;
+    }
+
+    const onParse = (event: ParsedEvent | ReconnectInterval) => {
+      if (event.type === "event") {
+        const data = event.data;
+        try {
+          const text = JSON.parse(data).text ?? ""
+          setGeneratedLyrics((prev) => prev + text);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+
+    const reader = data.getReader();
+    const decoder = new TextDecoder();
+    const parser = createParser(onParse);
+    let done = false;
+    while (!done) {
+      const { value, done: doneReading } = await reader.read();
+      done = doneReading;
+      const chunkValue = decoder.decode(value);
+      parser.feed(chunkValue);
+    }
+    scrollToLyrics();
+    setLoading(false);
+  };
+
+  return (
+    <div className="flex max-w-5xl mx-auto flex-col items-center justify-center py-2 min-h-screen">
+      <Header />
+
+      <main className="flex flex-1 w-full flex-col items-center justify-center text-center px-4 mt-12 sm:mt-20">
+        <h1 className="sm:text-6xl text-4xl max-w-[708px] font-bold text-slate-900">
+          Generate song lyrics using AI
+        </h1>
+
+        <div className="max-w-xl w-full">
+          <div className="flex mt-10 items-center space-x-3">
+            <p className="text-left font-medium">
+              Enter your topic and original lyrics
+            </p>
+          </div>
+
+          <input
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5"
+            placeholder={
+              "Topic"
+            }
+          />
+
+          <textarea
+            value={originalLyrics}
+            onChange={(e) => setOriginalLyrics(e.target.value)}
+            rows={10}
+            className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5"
+            placeholder={
+              "Original lyrics"
+            }
+          />
+
+          {!loading && (
+            <button
+              className="bg-black rounded-xl text-white font-medium px-4 py-2 sm:mt-10 mt-8 hover:bg-black/80 w-full"
+              onClick={(e) => generateLyrics(e)}
+            >
+              Generate lyrics &rarr;
+            </button>
+          )}
+          {loading && (
+            <button
+              className="bg-black rounded-xl text-white font-medium px-4 py-2 sm:mt-10 mt-8 hover:bg-black/80 w-full"
+              disabled
+            >
+              <LoadingDots color="white" style="large" />
+            </button>
+          )}
+
+          <div className="space-y-10 my-10">
+            {generatedLyrics && (
+              <>
+                <div>
+                  <h2
+                    className="sm:text-4xl text-3xl font-bold text-slate-900 mx-auto"
+                    ref={lyricsRef}
+                  >
+                    Your generated lyrics
+                  </h2>
+                </div>
+                <div className="space-y-8 flex flex-col items-center justify-center max-w-xl mx-auto">
+                  <div
+                    className="bg-white rounded-xl shadow-md p-4 hover:bg-gray-100 transition cursor-copy border"
+                  >
+                    <p>{generatedLyrics}</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default LyricsGenerator;
+------------------------
+./pages/_document.tsx
+import Document, { Head, Html, Main, NextScript } from "next/document";
+
+class MyDocument extends Document {
+  render() {
+    return (
+      <Html lang="en">
+        <Head>
+          <link rel="icon" href="/favicon.ico" />
+          <meta
+            name="description"
+            content="Generate your next Twitter bio in seconds."
+          />
+          <meta property="og:site_name" content="twitterbio.io" />
+          <meta
+            property="og:description"
+            content="Generate your next Twitter bio in seconds."
+          />
+          <meta property="og:title" content="Twitter Bio Generator" />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content="Twitter Bio Generator" />
+          <meta
+            name="twitter:description"
+            content="Generate your next Twitter bio in seconds."
+          />
+          <meta
+            property="og:image"
+            content="https://twitterbio.io/og-image.png"
+          />
+          <meta
+            name="twitter:image"
+            content="https://twitterbio.io/og-image.png"
+          />
+        </Head>
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    );
+  }
+}
+
+export default MyDocument;
+------------------------
+./pages/_app.tsx
+import { Analytics } from "@vercel/analytics/react";
+import type { AppProps } from "next/app";
+import "../styles/globals.css";
+
+function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <Component {...pageProps} />
+      <Analytics />
+    </>
+  );
+}
+
+export default MyApp;
+------------------------
