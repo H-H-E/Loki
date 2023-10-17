@@ -2,6 +2,8 @@ import type { NextPage } from "next";
 import { useRef, useState } from "react";
 import Header from "../components/Header";
 import LoadingDots from "../components/LoadingDots";
+import  LyricsGeneratorForm  from '../components/LyricsGeneratorForm';
+
 import {
   createParser,
   ParsedEvent,
@@ -171,7 +173,7 @@ const LyricsGenerator: NextPage = () => {
     }
   };
 
-  const generateLyrics = async (e: any) => {
+  const generateLyrics = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGeneratedLyrics("");
     setLoading(true);
@@ -225,64 +227,27 @@ const LyricsGenerator: NextPage = () => {
 
   return (
     <div className="container mx-auto p-4 max-height">
-      <ClickableImage />
-
-
+      <Header />
       <main className="space-y-8 object-center">
-        <div className="flex flex-col md:flex-row md:space-x-4">
-          <div className="md:w-1/2">
-            <h2 className="text-2xl mx-auto text-center font-bold">
-              1: Pick a Song
-            </h2>
-            <LyricsDecisionCard
-              onUseLyrics={(lyrics: string) => setOriginalLyrics(lyrics)}
-            />
-          </div>
-          <div className="md:w-1/2">
-            <h2 className="text-2xl mx-auto text-center font-bold">
-              2: Pick a Topic
-            </h2>
-            <div className="flex flex-col space-y-4 mt-4 order-2">
-              <input
-                className="p-2 max-w-sm mx-auto border text-center rounded"
-                placeholder="Topic"
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-              />
-              <textarea
-                className="p-2 border max-w-md mx-auto text-center rounded"
-                placeholder="Original Lyrics"
-                rows={10}
-                value={originalLyrics}
-                onChange={(e) => setOriginalLyrics(e.target.value)}
-              ></textarea>
-              {!loading && (
-                <button
-                  className="p-2 bg-black text-white max-w-sm mx-auto rounded"
-                  onClick={generateLyrics}
-                >
-                  Generate Lyrics
-                </button>
-              )}
-              {loading && (
-                <div className="max-w-sm mx-auto rounded">
-                  {" "}
-                  <LoadingDots color="black" />
-                </div>
-              )}
-            </div>
-            {generatedLyrics && (
-              <div className="bg-white rounded p-4 shadow-md flex flex-col overflow-y-auto items-center space-y-2 max-w-md mx-auto ">
-                <h2 className="text-2xl mx-auto text-center font-bold">
-                  Your Generated Lyrics
-                </h2>
-                <p className="text-center max-h-40 overflow-y-auto  whitespace-pre-line">
-                  {generatedLyrics}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+
+  
+
+
+      <LyricsDecisionCard
+            onUseLyrics={(lyrics: string) => setOriginalLyrics(lyrics)}
+          />
+
+        <LyricsGeneratorForm
+            topic={topic}
+            setTopic={setTopic}
+            originalLyrics={originalLyrics}
+            setOriginalLyrics={setOriginalLyrics}
+            generateLyrics={generateLyrics}
+            loading={loading}
+            generatedLyrics={generatedLyrics}
+          />
+        
+         
       </main>
     </div>
   );
