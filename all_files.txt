@@ -1,13 +1,28 @@
+Command: tree -I 'node_modules' && find . -type f \( -name '*.ts' -o -name '*.tsx' \) ! -path './node_modules/*' -print -exec cat {} \; -exec echo '------------------------' \;
 .
+├── @
+│   ├── components
+│   │   └── ui
+│   └── lib
+│       └── utils.ts
 ├── LICENSE
 ├── README.md
 ├── all_files.txt
+├── app
+│   └── globals.css
 ├── components
 │   ├── DropDown.tsx
 │   ├── Footer.tsx
 │   ├── GitHub.tsx
+│   ├── GoogleSearchEngine.js
 │   ├── Header.tsx
-│   └── LoadingDots.tsx
+│   ├── LoadingDots.tsx
+│   ├── LyricCard.tsx
+│   ├── LyricsGeneratorForm.tsx
+│   ├── badge.tsx
+│   ├── button.tsx
+│   └── card.tsx
+├── components.json
 ├── next-env.d.ts
 ├── next.config.js
 ├── package-lock.json
@@ -16,16 +31,22 @@
 │   ├── _app.tsx
 │   ├── _document.tsx
 │   ├── api
-│   │   └── generate.ts
+│   │   ├── generate.ts
+│   │   └── retrieve.ts
+│   ├── history
+│   ├── history.tsx
 │   └── index.tsx
 ├── postcss.config.js
 ├── public
 │   ├── 1-black.png
 │   ├── 2-black.png
 │   ├── analytics.png
+│   ├── dark.png
 │   ├── favicon.ico
+│   ├── light.png
+│   ├── lokilyrics.png
 │   ├── og-image.png
-│   ├── screenshot.png
+│   ├── poiesis.png
 │   ├── vercel.svg
 │   ├── vercelLogo.png
 │   └── writingIcon.png
@@ -37,7 +58,190 @@
 └── utils
     └── OpenAIStream.ts
 
-7 directories, 31 files
+13 directories, 45 files
+./utils/OpenAIStream.ts
+import {
+  createParser,
+  ParsedEvent,
+  ReconnectInterval,
+} from "eventsource-parser";
+
+export type ChatGPTAgent = "user" | "system";
+
+export interface ChatGPTMessage {
+  role: ChatGPTAgent;
+  content: string;
+}
+
+export interface OpenAIStreamPayload {
+  model: string;
+  messages: ChatGPTMessage[];
+  temperature: number;
+  top_p: number;
+  frequency_penalty: number;
+  presence_penalty: number;
+  max_tokens: number;
+  stream: boolean;
+  n: number;
+}
+
+export async function OpenAIStream(payload: OpenAIStreamPayload) {
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY ?? ""}`,
+    },
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      // callback
+      const onParse = (event: ParsedEvent | ReconnectInterval) => {
+        if (event.type === "event") {
+          const data = event.data;
+          controller.enqueue(encoder.encode(data));
+        }
+      }
+
+      // optimistic error handling
+      if (res.status !== 200) {
+        const data = {
+          status: res.status,
+          statusText: res.statusText,
+          body: await res.text(),
+        }
+        console.log(`Error: recieved non-200 status code, ${JSON.stringify(data)}`);
+        controller.close();
+        return
+      }
+        
+      // stream response (SSE) from OpenAI may be fragmented into multiple chunks
+      // this ensures we properly read chunks and invoke an event for each SSE event stream
+      const parser = createParser(onParse);
+      // https://web.dev/streams/#asynchronous-iteration
+      for await (const chunk of res.body as any) {
+        parser.feed(decoder.decode(chunk));
+      }
+    },
+  });
+
+  let counter = 0;
+  const transformStream = new TransformStream({
+    async transform(chunk, controller) {
+      const data = decoder.decode(chunk);
+      // https://beta.openai.com/docs/api-reference/completions/create#completions/create-stream
+      if (data === "[DONE]") {
+        controller.terminate();
+        return;
+      }
+      try {
+        const json = JSON.parse(data);
+        const text = json.choices[0].delta?.content || "";
+        if (counter < 2 && (text.match(/\n/) || []).length) {
+          // this is a prefix character (i.e., "\n\n"), do nothing
+          return;
+        }
+        // stream transformed JSON resposne as SSE
+        const payload = {text: text};
+        // https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(payload)}\n\n`)
+        );
+        counter++;
+      } catch (e) {
+        // maybe parse error
+        controller.error(e);
+      }
+    },
+  });
+
+  return readableStream.pipeThrough(transformStream);
+}
+------------------------
+./next-env.d.ts
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/basic-features/typescript for more information.
+------------------------
+./components/LyricsGeneratorForm.tsx
+// components/LyricsGeneratorForm.tsx
+
+import React from 'react';
+import LyricCard from './LyricCard';
+
+interface LyricsGeneratorFormProps {
+  topic: string;
+  setTopic: (topic: string) => void;
+  originalLyrics: string;
+  setOriginalLyrics: (lyrics: string) => void;
+  generateLyrics: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+
+  loading: boolean;
+  generatedLyrics: string;
+}
+
+const LyricsGeneratorForm: React.FC<LyricsGeneratorFormProps> = ({
+  topic,
+  setTopic,
+  originalLyrics,
+  setOriginalLyrics,
+  generateLyrics,
+  loading,
+  generatedLyrics,
+}) => {
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedLyrics);
+      };
+  return (
+    <div className="">
+      <h2 className="text-2xl mx-auto text-center font-bold">
+        2: Pick a Topic
+      </h2>
+      <div className="flex flex-col space-y-4 mt-4 order-2">
+        <input
+          className="p-2 max-w-sm mx-auto border text-center rounded"
+          placeholder="Topic"
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+        />
+        <textarea
+          className="p-2 border max-w-md mx-auto text-center rounded"
+          placeholder="Original Lyrics"
+          rows={10}
+          value={originalLyrics}
+          onChange={(e) => setOriginalLyrics(e.target.value)}
+        ></textarea>
+      
+      <form className="flex flex-col space-y-4 mt-4 order-2"
+  onSubmit={(e) => {
+    e.preventDefault();
+    generateLyrics(e);
+  }}
+>
+  <button
+    type="submit"  // Note the type="submit"
+    className="p-2 bg-black text-white max-w-sm mx-auto rounded"
+  >
+    Generate Lyrics
+  </button>
+</form>
+
+        {generatedLyrics && (
+          <LyricCard lyrics={generatedLyrics} />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default LyricsGeneratorForm;------------------------
 ./components/LoadingDots.tsx
 import styles from "../styles/loading-dots.module.css";
 
@@ -63,6 +267,177 @@ LoadingDots.defaultProps = {
   style: "small",
 };
 ------------------------
+./components/card.tsx
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      className
+    )}
+    {...props}
+  />
+))
+Card.displayName = "Card"
+
+const CardHeader = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    {...props}
+  />
+))
+CardHeader.displayName = "CardHeader"
+
+const CardTitle = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLHeadingElement>
+>(({ className, ...props }, ref) => (
+  <h3
+    ref={ref}
+    className={cn(
+      "text-2xl font-semibold leading-none tracking-tight",
+      className
+    )}
+    {...props}
+  />
+))
+CardTitle.displayName = "CardTitle"
+
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+))
+CardDescription.displayName = "CardDescription"
+
+const CardContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
+))
+CardContent.displayName = "CardContent"
+
+const CardFooter = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("flex items-center p-6 pt-0", className)}
+    {...props}
+  />
+))
+CardFooter.displayName = "CardFooter"
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+------------------------
+./components/LyricCard.tsx
+/**
+ * v0 by Vercel.
+ * @see https://v0.dev/t/M3idgABmkME
+ */
+import { Button } from "./button"
+import { CardTitle, CardHeader, CardContent, CardFooter, Card } from "./card"
+import { Badge } from "./badge"
+
+export default function LyricCard({ lyrics }: { lyrics: string }) {
+  return (
+    <div>
+      <div>
+        <Button className="mb-4" variant="outline">
+          <svg
+            className=" h-6 w-6 mr-2"
+            fill="none"
+            height="24"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <line x1="4" x2="20" y1="12" y2="12" />
+            <line x1="4" x2="20" y1="6" y2="6" />
+            <line x1="4" x2="20" y1="18" y2="18" />
+          </svg>
+          My History
+        </Button>
+      </div>
+      <div className="w-80 mt-2">
+        <div>
+          <div className="text-lg font-semibold px-4 py-2">Generated Lyrics</div>
+          <div className="px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700">
+            <Card>
+              <CardHeader className="flex items-center space-x-4">
+                <img
+                  alt="Album Cover"
+                  className="rounded-lg"
+                  height="80"
+                  src="/placeholder.svg"
+                  style={{
+                    aspectRatio: "80/80",
+                    objectFit: "cover",
+                  }}
+                  width="80"
+                />
+                <div>
+                  <CardTitle className="text-xl font-semibold">Song Title</CardTitle>
+                  <p className="text-sm text-gray-500 dark:text-gray-300">Artist Name</p>
+                </div>
+              </CardHeader>
+              <textarea className="p-6 text-sm"
+                placeholder="Original Lyrics"
+                rows={10}
+                value={lyrics}>     </textarea>
+              <CardFooter className="flex justify-between items-center">
+                <Badge className="items-center" variant="outline">
+                  <svg
+                    className=" h-3.5 w-3.5 -translate-x-1"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z" />
+                    <path d="M10 2c1 .5 2 2 2 5" />
+                  </svg>
+                  AI-generated
+                </Badge>
+                <Button size="sm" variant="secondary">
+                  View More
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+------------------------
 ./components/GitHub.tsx
 export default function Github({ className }: { className?: string }) {
   return (
@@ -85,52 +460,7 @@ import Link from "next/link";
 export default function Footer() {
   return (
     <footer className="text-center h-16 sm:h-20 w-full sm:pt-2 pt-4 border-t mt-5 flex sm:flex-row flex-col justify-between items-center px-3 space-y-3 sm:mb-0 mb-3">
-      <div>
-        Powered by{" "}
-        <a
-          href="https://openai.com/blog/chatgpt"
-          target="_blank"
-          rel="noreferrer"
-          className="font-bold hover:underline transition underline-offset-2"
-        >
-          ChatGPT{" "}
-        </a>
-        and{" "}
-        <a
-          href="https://vercel.com/"
-          target="_blank"
-          rel="noreferrer"
-          className="font-bold hover:underline transition underline-offset-2"
-        >
-          Vercel Edge Functions.
-        </a>
-      </div>
-      <div className="flex space-x-4 pb-4 sm:pb-0">
-        <Link
-          href="https://twitter.com/nutlope"
-          className="group"
-          aria-label="TaxPal on Twitter"
-        >
-          <svg
-            aria-hidden="true"
-            className="h-6 w-6 fill-slate-500 group-hover:fill-slate-700"
-          >
-            <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0 0 22 5.92a8.19 8.19 0 0 1-2.357.646 4.118 4.118 0 0 0 1.804-2.27 8.224 8.224 0 0 1-2.605.996 4.107 4.107 0 0 0-6.993 3.743 11.65 11.65 0 0 1-8.457-4.287 4.106 4.106 0 0 0 1.27 5.477A4.073 4.073 0 0 1 2.8 9.713v.052a4.105 4.105 0 0 0 3.292 4.022 4.093 4.093 0 0 1-1.853.07 4.108 4.108 0 0 0 3.834 2.85A8.233 8.233 0 0 1 2 18.407a11.615 11.615 0 0 0 6.29 1.84" />
-          </svg>
-        </Link>
-        <Link
-          href="https://github.com/Nutlope/twitterbio"
-          className="group"
-          aria-label="TaxPal on GitHub"
-        >
-          <svg
-            aria-hidden="true"
-            className="h-6 w-6 fill-slate-500 group-hover:fill-slate-700"
-          >
-            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z" />
-          </svg>
-        </Link>
-      </div>
+  
     </footer>
   );
 }
@@ -217,45 +547,295 @@ export default function DropDown({ vibe, setVibe }: DropDownProps) {
 ./components/Header.tsx
 import Image from "next/image";
 import Link from "next/link";
+import{Button }  from "../components/button"
 
 export default function Header() {
   return (
-    <header className="flex justify-between items-center w-full mt-5 border-b-2 pb-7 sm:px-4 px-2">
+    <header className="flex justify-center items-center w-full mt-5 border-b-2 pb-7 sm:px-4 px-2">
       <Link href="/" className="flex space-x-3">
+      <h1 className="sm:text-3xl pt-6   text-xl font-bold ml-2 tracking-tight">
+         Loki 
+       </h1>
+       <br></br>
         <Image
           alt="header text"
-          src="/writingIcon.png"
-          className="sm:w-12 sm:h-12 w-8 h-8"
-          width={32}
-          height={32}
+          src="/lokilyrics.png"
+          className=" font-bold ml-2 tracking-tight"
+          width={90}
+          height={90}
+         
         />
-        <h1 className="sm:text-4xl text-2xl font-bold ml-2 tracking-tight">
-          twitterbio.io
-        </h1>
+     
       </Link>
       <a
-        href="https://vercel.com/templates/next.js/twitter-bio"
+        href="https://2022.poiesis.education"
         target="_blank"
         rel="noreferrer"
       >
-        <Image
-          alt="Vercel Icon"
-          src="/vercelLogo.png"
-          className="sm:w-8 sm:h-[27px] w-8 h-[28px]"
-          width={32}
-          height={28}
-        />
       </a>
+      <Button className="ml-auto" >
+
+        <Link className="text-white bg-blue-500 hover:bg-blue-700 text-sm font-semibold py-2 px-4 rounded" href="./history">
+          
+            History
+          
+        </Link>
+
+
+
+
+      </Button>
+      
     </header>
   );
 }
+------------------------
+./components/badge.tsx
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+        outline: "text-foreground",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return (
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+  )
+}
+
+export { Badge, badgeVariants }
+------------------------
+./components/button.tsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
 ------------------------
 ./pages/index.tsx
 import type { NextPage } from "next";
 import { useRef, useState } from "react";
 import Header from "../components/Header";
 import LoadingDots from "../components/LoadingDots";
-import { createParser, ParsedEvent, ReconnectInterval } from "eventsource-parser";
+import  LyricsGeneratorForm  from '../components/LyricsGeneratorForm';
+
+import {
+  createParser,
+  ParsedEvent,
+  ReconnectInterval,
+} from "eventsource-parser";
+
+import GoogleSearchEngine from "../components/GoogleSearchEngine";
+
+import image1 from "../public/light.png";
+import image2 from "../public/dark.png";
+
+interface LyricsDecisionCardProps {
+  onUseLyrics: (lyrics: string) => void;
+}
+
+interface LyricsData {
+  lyrics: string;
+  image: string;
+}
+
+const fetchOriginalLyrics = async (
+  trackName: string,
+  artistName: string
+): Promise<LyricsData> => {
+  try {
+    const response = await fetch(
+      `/api/retrieve?track_name=${trackName}&artist_name=${artistName}`
+    );
+    if (response.ok) {
+      const data: LyricsData = await response.json();
+      return data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch lyrics:", error);
+  }
+  return { lyrics: "", image: "" };
+};
+
+const LyricsDecisionCard: React.FC<LyricsDecisionCardProps> = ({
+  onUseLyrics,
+}) => {
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyrics, setLyrics] = useState("");
+  const [image, setImage] = useState("");
+  const [artistName, setArtistName] = useState("");
+  const [trackName, setTrackName] = useState("");
+
+  const tryAgain = () => {
+    setShowLyrics(false);
+    setLyrics("");
+    setImage("");
+  };
+
+  const fetchAndShowLyrics = async () => {
+    const { lyrics, image } = await fetchOriginalLyrics(trackName, artistName);
+    setLyrics(lyrics);
+    setImage(image);
+    setShowLyrics(true);
+  };
+
+  return (
+    <div className="order-1 flex flex-col space-y-4 container-mx-auto">
+      {!showLyrics ? (
+        <div className="object-center mx-auto space-y-4 flex flex-col">
+          <input
+            className="p-2 border rounded mx-auto max-w-sm"
+            type="text"
+            placeholder="Artist Name"
+            value={artistName}
+            onChange={(e) => setArtistName(e.target.value)}
+          />
+          <input
+            className="p-2 border rounded mx-auto max-w-sm"
+            type="text"
+            placeholder="Track Name"
+            value={trackName}
+            onChange={(e) => setTrackName(e.target.value)}
+          />
+          <button
+            className="p-2 bg-black text-white max-w-sm mx-auto rounded"
+            onClick={fetchAndShowLyrics}
+          >
+            Fetch Lyrics
+          </button>
+        </div>
+      ) : (
+        <div className="sticky">
+          <div className="bg-white rounded p-4 shadow-md flex flex-col items-center space-y-2 max-w-md mx-auto ">
+            <h2 className="text-xl font-semibold sticky-0 items-center">
+              Original Lyrics
+            </h2>
+            {image && (
+              <img
+                className="w-40 h-40 object-center rounded"
+                src={image}
+                alt={`${trackName} by ${artistName}`}
+              />
+            )}
+            <div className="flex space-x-2">
+              <button
+                className="p-2 bg-black text-white rounded"
+                onClick={() => onUseLyrics(lyrics)}
+              >
+                Use These Lyrics
+              </button>
+              <button
+                className="p-2 bg-blue-700 text-white rounded"
+                onClick={tryAgain}
+              >
+                Try Again
+              </button>
+            </div>
+            <div className="max-h-40 overflow-y-auto">
+              <p className="text-center whitespace-pre-line">{lyrics}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+const ClickableImage: React.FC = () => {
+  const [isImageOne, setIsImageOne] = useState(true);
+
+  const handleClick = () => {
+    setIsImageOne(!isImageOne);
+  };
+
+  return (
+    <img
+      className="w-40 h-40 mx-auto rounded"
+      src={isImageOne ? '/dark.png' : '/light.png' }
+      alt="clickable"
+      onClick={handleClick}
+    />
+  );
+};
+
+
+
+
+
+
 
 const LyricsGenerator: NextPage = () => {
   const [loading, setLoading] = useState(false);
@@ -270,13 +850,24 @@ const LyricsGenerator: NextPage = () => {
       lyricsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
+  const fetchOriginalLyrics = async (trackName: string, artistName: string) => {
+    try {
+      const response = await fetch(`/api/${trackName}/${artistName}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOriginalLyrics(data.lyrics);
+      }
+    } catch (error) {
+      console.error("Failed to fetch lyrics:", error);
+    }
+  };
 
-  const generateLyrics = async (e: any) => {
+  const generateLyrics = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setGeneratedLyrics("");
     setLoading(true);
 
-    const prompt = `Rewrite the lyrics of this song to revolve around the topic "${topic}". The original lyrics are: ${originalLyrics}`;
+    const prompt = `Your task is to rewrite the lyrics of a given song to revolve around a specific topic provided. The goal is to keep the original rhythm and structure of the song, adapting and substitifying words to create a new set of lyrics in line with the given theme. You should stay true to the song's rhyme scheme and musicality, whilst making sure the lyrics provide a coherent narrative around the topic and can be sung with the same tune of the song. Your input would be the original lyrics of the song, along with the specified topic, and your output would be the adapted lyrics revolving around that topic. While rewriting, remember to not only focus on thematic relevance but also ensure that your lyrics preserve the musical appeal of the original song. Essentially, you're creating a completely different version of the song that can stand on its own while staying true to the original's musical qualities. Topic:  "${topic}" Original lyrics: ${originalLyrics} Please provide the lyrics line by line.`;
 
     const response = await fetch("/api/generate", {
       method: "POST",
@@ -301,13 +892,13 @@ const LyricsGenerator: NextPage = () => {
       if (event.type === "event") {
         const data = event.data;
         try {
-          const text = JSON.parse(data).text ?? ""
+          const text = JSON.parse(data).text ?? "";
           setGeneratedLyrics((prev) => prev + text);
         } catch (e) {
           console.error(e);
         }
       }
-    }
+    };
 
     const reader = data.getReader();
     const decoder = new TextDecoder();
@@ -324,79 +915,28 @@ const LyricsGenerator: NextPage = () => {
   };
 
   return (
-    <div className="flex max-w-5xl mx-auto flex-col items-center justify-center py-2 min-h-screen">
+    <div className="container mx-auto p-4 max-height">
       <Header />
+      <main className="space-y-8 object-center">
 
-      <main className="flex flex-1 w-full flex-col items-center justify-center text-center px-4 mt-12 sm:mt-20">
-        <h1 className="sm:text-6xl text-4xl max-w-[708px] font-bold text-slate-900">
-          Generate song lyrics using AI
-        </h1>
+  
 
-        <div className="max-w-xl w-full">
-          <div className="flex mt-10 items-center space-x-3">
-            <p className="text-left font-medium">
-              Enter your topic and original lyrics
-            </p>
-          </div>
 
-          <input
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5"
-            placeholder={
-              "Topic"
-            }
+      <LyricsDecisionCard
+            onUseLyrics={(lyrics: string) => setOriginalLyrics(lyrics)}
           />
 
-          <textarea
-            value={originalLyrics}
-            onChange={(e) => setOriginalLyrics(e.target.value)}
-            rows={10}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:border-black focus:ring-black my-5"
-            placeholder={
-              "Original lyrics"
-            }
+        <LyricsGeneratorForm
+            topic={topic}
+            setTopic={setTopic}
+            originalLyrics={originalLyrics}
+            setOriginalLyrics={setOriginalLyrics}
+            generateLyrics={generateLyrics}
+            loading={loading}
+            generatedLyrics={generatedLyrics}
           />
-
-          {!loading && (
-            <button
-              className="bg-black rounded-xl text-white font-medium px-4 py-2 sm:mt-10 mt-8 hover:bg-black/80 w-full"
-              onClick={(e) => generateLyrics(e)}
-            >
-              Generate lyrics &rarr;
-            </button>
-          )}
-          {loading && (
-            <button
-              className="bg-black rounded-xl text-white font-medium px-4 py-2 sm:mt-10 mt-8 hover:bg-black/80 w-full"
-              disabled
-            >
-              <LoadingDots color="white" style="large" />
-            </button>
-          )}
-
-          <div className="space-y-10 my-10">
-            {generatedLyrics && (
-              <>
-                <div>
-                  <h2
-                    className="sm:text-4xl text-3xl font-bold text-slate-900 mx-auto"
-                    ref={lyricsRef}
-                  >
-                    Your generated lyrics
-                  </h2>
-                </div>
-                <div className="space-y-8 flex flex-col items-center justify-center max-w-xl mx-auto">
-                  <div
-                    className="bg-white rounded-xl shadow-md p-4 hover:bg-gray-100 transition cursor-copy border"
-                  >
-                    <p>{generatedLyrics}</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        
+         
       </main>
     </div>
   );
@@ -415,27 +955,27 @@ class MyDocument extends Document {
           <link rel="icon" href="/favicon.ico" />
           <meta
             name="description"
-            content="Generate your next Twitter bio in seconds."
+            content="Give a song and a topic, get a song about that topic"
           />
-          <meta property="og:site_name" content="twitterbio.io" />
+          <meta property="og:site_name" content="poet.poiesis.education" />
           <meta
             property="og:description"
-            content="Generate your next Twitter bio in seconds."
+            content="Give a song and a topic, get a song about that topic"
           />
           <meta property="og:title" content="Twitter Bio Generator" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content="Twitter Bio Generator" />
           <meta
             name="twitter:description"
-            content="Generate your next Twitter bio in seconds."
+            content="Give a song and a topic, get a song about that topic"
           />
           <meta
             property="og:image"
-            content="https://twitterbio.io/og-image.png"
+            content="https://poet.poiesis.education/og-image.png"
           />
           <meta
             name="twitter:image"
-            content="https://twitterbio.io/og-image.png"
+            content="https://poet.poiesis.education/og-image.png"
           />
         </Head>
         <body>
@@ -448,6 +988,109 @@ class MyDocument extends Document {
 }
 
 export default MyDocument;
+------------------------
+./pages/history.tsx
+import Header from "../components/Header"
+
+
+
+export default function Page() {
+    return(
+    <div className="container mx-auto p-4 max-height">
+
+        <Header/>
+
+
+    </div>)
+  }
+
+
+
+
+
+------------------------
+./pages/api/retrieve.ts
+import { NextApiRequest, NextApiResponse } from 'next';
+import axios from 'axios';
+import rateLimit from 'axios-rate-limit';
+
+// Define Axios error type
+interface AxiosError extends Error {
+  response?: {
+    status: number;
+    data: any;
+  };
+}
+
+const http = rateLimit(axios.create(), { maxRequests: 150, perMilliseconds: 60 * 60 * 1000 });
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { track_name, artist_name } = req.query;
+
+  try {
+    const response = await http.get(`https://lyrist.vercel.app/api/${track_name}/${artist_name}`);
+    const { lyrics, image } = response.data;
+    if (lyrics && image) {
+      res.status(200).json({ lyrics, image });
+    } else {
+      res.status(404).json({ message: "Lyrics or image not found" });
+    }
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      const axiosError = error as AxiosError;
+      res.status(axiosError.response?.status || 500).json(axiosError.response?.data || {});
+    } else {
+      res.status(500).json({ message: "Unknown error" });
+    }
+  }
+}
+------------------------
+./pages/api/generate.ts
+import { OpenAIStream, OpenAIStreamPayload } from "../../utils/OpenAIStream";
+
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error("Missing env var from OpenAI");
+}
+
+// Default to 'gpt-4' if MODEL_TYPE isn't specified
+const modelType = process.env.MODEL_TYPE || 'gpt-4';
+
+export const config = {
+  runtime: "edge",
+};
+
+const handler = async (req: Request): Promise<Response> => {
+  const { prompt } = (await req.json()) as {
+    prompt?: string;
+  };
+
+  if (!prompt) {
+    return new Response("No prompt in the request", { status: 400 });
+  }
+
+  const payload: OpenAIStreamPayload = {
+    model: modelType,  
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.7,
+    top_p: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    max_tokens: 1000,
+    stream: true,
+    n: 1,
+  };
+
+  const stream = await OpenAIStream(payload);
+  return new Response(
+    stream, {
+      headers: new Headers({
+        'Cache-Control': 'no-cache',
+      })
+    }
+  );
+};
+
+export default handler;
 ------------------------
 ./pages/_app.tsx
 import { Analytics } from "@vercel/analytics/react";
@@ -464,4 +1107,12 @@ function MyApp({ Component, pageProps }: AppProps) {
 }
 
 export default MyApp;
+------------------------
+./@/lib/utils.ts
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+ 
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
 ------------------------

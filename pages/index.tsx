@@ -125,22 +125,6 @@ const LyricsDecisionCard: React.FC<LyricsDecisionCardProps> = ({
     </div>
   );
 };
-const ClickableImage: React.FC = () => {
-  const [isImageOne, setIsImageOne] = useState(true);
-
-  const handleClick = () => {
-    setIsImageOne(!isImageOne);
-  };
-
-  return (
-    <img
-      className="w-40 h-40 mx-auto rounded"
-      src={isImageOne ? '/dark.png' : '/light.png' }
-      alt="clickable"
-      onClick={handleClick}
-    />
-  );
-};
 
 
 

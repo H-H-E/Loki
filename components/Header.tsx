@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import{Button }  from "../components/button"
 
 export default function Header() {
   return (
@@ -25,6 +26,19 @@ export default function Header() {
         rel="noreferrer"
       >
       </a>
+      <Button className="ml-auto" >
+
+        <Link className="text-white bg-blue-500 hover:bg-blue-700 text-sm font-semibold py-2 px-4 rounded" href="./history">
+          
+            History
+          
+        </Link>
+
+
+
+
+      </Button>
+      
     </header>
   );
 }

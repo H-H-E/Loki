@@ -1,6 +1,7 @@
 // components/LyricsGeneratorForm.tsx
 
 import React from 'react';
+import LyricCard from './LyricCard';
 
 interface LyricsGeneratorFormProps {
   topic: string;
@@ -59,21 +60,8 @@ const LyricsGeneratorForm: React.FC<LyricsGeneratorFormProps> = ({
   </button>
 </form>
 
-        
-     
         {generatedLyrics && (
-          <div className="bg-white rounded p-4 shadow-md flex flex-col overflow-y-auto items-center space-y-2 max-w-md  mx-auto ">
-            <h2 className="text-2xl mx-auto text-center font-bold">
-              Your Generated Lyrics
-            </h2>
-            <button onClick={copyToClipboard} className="p-2 bg-black text-white max-w-sm mx-auto rounded">
-            Copy to Clipboard
-          </button>
-            <p className="text-center max-h-md:1/4 overflow-y-auto  whitespace-pre-line">
-              {generatedLyrics}
-            </p>
-
-          </div>
+          <LyricCard lyrics={generatedLyrics} />
         )}
       </div>
     </div>
