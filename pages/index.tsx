@@ -4,8 +4,10 @@ import Header from "../components/Header";
 import LoadingDots from "../components/LoadingDots";
 import  LyricsGeneratorForm  from '../components/LyricsGeneratorForm';
 import { Card, CardContent }  from "../components/ui/card";
-import { CarouselItem, CarouselContent, CarouselPrevious, CarouselNext, Carousel, CarouselApi } from "../components/ui/carousel";
-import  useEmblaCarousel  from 'embla-carousel-react';
+import { CarouselItem, CarouselContent, CarouselPrevious, CarouselNext, Carousel } from "../components/ui/carousel";
+import { History } from "../components/History";
+
+
 import {
   createParser,
   ParsedEvent,
@@ -16,11 +18,10 @@ import GoogleSearchEngine from "../components/GoogleSearchEngine";
 
 import image1 from "../public/light.png";
 import image2 from "../public/dark.png";
-const [carouselRef, api] = useEmblaCarousel();
-console.log(carouselRef, api);
+
 interface LyricsDecisionCardProps {
   onUseLyrics: (lyrics: string) => void;
-  carouselApi?: CarouselApi;
+  
 }
 
 interface LyricsData {
@@ -48,7 +49,6 @@ const fetchOriginalLyrics = async (
 
 const LyricsDecisionCard: React.FC<LyricsDecisionCardProps> = ({
   onUseLyrics,
-  carouselApi,
 }) => {
   const [showLyrics, setShowLyrics] = useState(false);
   const [lyrics, setLyrics] = useState("");
@@ -110,8 +110,7 @@ const LyricsDecisionCard: React.FC<LyricsDecisionCardProps> = ({
             <div className="flex space-x-2">
               <button
                 className="p-2 bg-black text-white rounded"
-                onClick={() => {onUseLyrics(lyrics);
-                carouselApi?.scrollNext(); }}
+                onClick={() => onUseLyrics(lyrics)}
               >
                 Use These Lyrics
               </button>
@@ -159,9 +158,7 @@ const LyricsGenerator: NextPage = () => {
   const [topic, setTopic] = useState("");
   const [originalLyrics, setOriginalLyrics] = useState("");
   const [generatedLyrics, setGeneratedLyrics] = useState("");
-  const [carouselRef, api] = useEmblaCarousel();
-
-
+  const [history, setHistory] = useState([]);
   const lyricsRef = useRef<null | HTMLDivElement>(null);
 
   const scrollToLyrics = () => {
@@ -213,6 +210,7 @@ const LyricsGenerator: NextPage = () => {
         try {
           const text = JSON.parse(data).text ?? "";
           setGeneratedLyrics((prev) => prev + text);
+          setHistory((prevHistory) => [...prevHistory, { songTitle: "Your Song Title", parodyTitle: "Your Parody Title", artist: "Artist Name", generationDate: new Date().toISOString().split('T')[0], lyrics: generatedLyrics }]);
         } catch (e) {
           console.error(e);
         }
@@ -234,27 +232,25 @@ const LyricsGenerator: NextPage = () => {
   };
 
   return (
-    <div className="container w-full max-w-sm  mx-auto p-4 max-height">
-      <Header />
-      <main className="space-y-8 object-center ">
-      <Carousel className="w-full max-w-sm">
+    <div className="container w-full  mx-auto p-4 max-height">
+     
+     <main className="flex justify-center items-center min-h-screen pt-20">      
+     <Carousel className="w-full max-w-xxl mx-auto">      
       <CarouselContent>
         <CarouselItem>
-          <div className="p-1">
             <Card>
-              <CardContent className="flex items-center justify-center p-6 gap-4 flex-col">
+              <CardContent className="w-half flex items-center justify-center p-6 gap-4 flex-col">
                 <LyricsDecisionCard
                   onUseLyrics={(lyrics: string) => setOriginalLyrics(lyrics)}
-                  carouselApi={api} 
                 />
               </CardContent>
             </Card>
-          </div>
+          
         </CarouselItem>
         <CarouselItem>
           <div className="p-1">
             <Card>
-              <CardContent className="flex items-center justify-center p-6 gap-4 flex-col">
+              <CardContent className="flex items-center justify-center  p-6 gap-4 flex-col ">
                 <LyricsGeneratorForm
                   topic={topic}
                   setTopic={setTopic}
@@ -268,10 +264,20 @@ const LyricsGenerator: NextPage = () => {
             </Card>
           </div>
         </CarouselItem>
+        <CarouselItem >
+        <Card  >
+          <CardContent className="flex items-center justify-center p-6 gap-4 flex-col">
+          <History history={history} />
+        </CardContent>
+        </Card>
+
+        </CarouselItem>
       </CarouselContent>
-      <CarouselPrevious />
       <CarouselNext />
+      <CarouselPrevious />
+
     </Carousel>
+   
 
   
 
