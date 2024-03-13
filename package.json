@@ -25,6 +25,7 @@
     "react-hook-form": "^7.42.0",
     "react-hot-toast": "^2.4.0",
     "react-use-measure": "^2.1.1",
+    "tailwind": "^4.0.0",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7"
   },

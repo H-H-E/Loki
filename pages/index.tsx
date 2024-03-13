@@ -5,7 +5,6 @@ import LoadingDots from "../components/LoadingDots";
 import  LyricsGeneratorForm  from '../components/LyricsGeneratorForm';
 import { Card, CardContent }  from "../components/ui/card";
 import { CarouselItem, CarouselContent, CarouselPrevious, CarouselNext, Carousel, CarouselApi } from "../components/ui/carousel";
-import  useEmblaCarousel  from 'embla-carousel-react';
 import {
   createParser,
   ParsedEvent,
@@ -16,8 +15,6 @@ import GoogleSearchEngine from "../components/GoogleSearchEngine";
 
 import image1 from "../public/light.png";
 import image2 from "../public/dark.png";
-const [carouselRef, api] = useEmblaCarousel();
-console.log(carouselRef, api);
 interface LyricsDecisionCardProps {
   onUseLyrics: (lyrics: string) => void;
   carouselApi?: CarouselApi;
@@ -111,7 +108,7 @@ const LyricsDecisionCard: React.FC<LyricsDecisionCardProps> = ({
               <button
                 className="p-2 bg-black text-white rounded"
                 onClick={() => {onUseLyrics(lyrics);
-                carouselApi?.scrollNext(); }}
+                 }}
               >
                 Use These Lyrics
               </button>
@@ -159,7 +156,6 @@ const LyricsGenerator: NextPage = () => {
   const [topic, setTopic] = useState("");
   const [originalLyrics, setOriginalLyrics] = useState("");
   const [generatedLyrics, setGeneratedLyrics] = useState("");
-  const [carouselRef, api] = useEmblaCarousel();
 
 
   const lyricsRef = useRef<null | HTMLDivElement>(null);
@@ -245,7 +241,6 @@ const LyricsGenerator: NextPage = () => {
               <CardContent className="flex items-center justify-center p-6 gap-4 flex-col">
                 <LyricsDecisionCard
                   onUseLyrics={(lyrics: string) => setOriginalLyrics(lyrics)}
-                  carouselApi={api} 
                 />
               </CardContent>
             </Card>
