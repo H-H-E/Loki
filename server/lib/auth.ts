@@ -2,7 +2,7 @@ import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { fromNodeHeaders } from 'better-auth/node';
 import { Pool } from 'pg';
 import type { VercelRequest } from '@vercel/node';
-import { ApiError } from './http';
+import { ApiError } from './http.js';
 
 export interface AuthConfiguration {
   databaseUrl: string;

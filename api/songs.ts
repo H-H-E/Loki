@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { ApiError, body, consumeQuota, fail, postOnly, rateLimit, requireUser } from '../server/lib/http';
-import { importSongServer, searchSongsServer } from '../server/lib/everysong';
-import { songSchema } from '../server/lib/schemas';
+import { ApiError, body, consumeQuota, fail, postOnly, rateLimit, requireUser } from '../server/lib/http.js';
+import { importSongServer, searchSongsServer } from '../server/lib/everysong.js';
+import { songSchema } from '../server/lib/schemas.js';
 const requestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('search'), query: z.string().trim().min(3).max(120), kind: z.enum(['title','lyric','artist']).default('title') }),
   z.object({ action: z.literal('import'), song: songSchema }),

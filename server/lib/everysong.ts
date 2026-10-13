@@ -1,5 +1,5 @@
-import type { SongResult, Source } from '../../src/types';
-import { ApiError, jsonFetch } from './http';
+import type { SongResult, Source } from '../../src/types.js';
+import { ApiError, jsonFetch } from './http.js';
 
 export function normalizedIdentity(value: unknown): string {
   return String(value ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
-import { requireSessionUser } from './auth';
-import { getSql, isDatabaseConfigured } from './db';
+import { requireSessionUser } from './auth.js';
+import { getSql, isDatabaseConfigured } from './db.js';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string, public code = 'REQUEST_FAILED', public retryAfter?: number) { super(message); }

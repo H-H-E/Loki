@@ -22,3 +22,4 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run test:sites
+      - run: npm run test:runtime

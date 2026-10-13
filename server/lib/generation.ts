@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { z } from 'zod';
-import type { GenerationResult } from '../../src/types';
-import { ApiError, jsonFetch } from './http';
-import { alternativesSchema, directionsSchema, projectSchema, resultSchema, reviewSchema } from './schemas';
+import type { GenerationResult } from '../../src/types.js';
+import { ApiError, jsonFetch } from './http.js';
+import { alternativesSchema, directionsSchema, projectSchema, resultSchema, reviewSchema } from './schemas.js';
 export type InputProject = z.infer<typeof projectSchema>;
 export function targetLines(project: InputProject, scope: string, lineIds?: string[]) {
   if (scope === 'section' && !lineIds?.length) throw new ApiError(400, 'Select a section to write.', 'INVALID_SCOPE');

@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "check": "npm run typecheck && npm test && npm run build",
     "dev:full": "node scripts/dev.mjs",
-    "db:migrate": "node scripts/migrate.mjs"
+    "db:migrate": "node scripts/migrate.mjs",
+    "test:runtime": "node --test tests/server-runtime.test.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

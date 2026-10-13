@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { z } from 'zod';
-import { ApiError, body, fail, postOnly, requireUser } from '../server/lib/http';
-import { getSql, isDatabaseConfigured } from '../server/lib/db';
-import { lineSchema, projectSchema } from '../server/lib/schemas';
+import { ApiError, body, fail, postOnly, requireUser } from '../server/lib/http.js';
+import { getSql, isDatabaseConfigured } from '../server/lib/db.js';
+import { lineSchema, projectSchema } from '../server/lib/schemas.js';
 
 const saveSchema = z.object({
   action: z.literal('save'),
