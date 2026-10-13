@@ -1,0 +1,30 @@
+{
+  "framework": "vite",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/client",
+  "rewrites": [
+    {
+      "source": "/api/auth/:path*",
+      "destination": "/api/auth?path=:path*"
+    },
+    {
+      "source": "/((?!api(?:/|$)).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/auth.ts": {
+      "maxDuration": 60
+    },
+    "api/projects.ts": {
+      "maxDuration": 60
+    },
+    "api/generate.ts": {
+      "maxDuration": 120
+    },
+    "api/songs.ts": {
+      "maxDuration": 90
+    }
+  }
+}
