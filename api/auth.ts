@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fromNodeHeaders } from 'better-auth/node';
-import { assertTrustedRequestOrigin, getAuth, getAuthConfiguration } from '../server/lib/auth';
-import { ApiError, fail } from '../server/lib/http';
+import { assertTrustedRequestOrigin, getAuth, getAuthConfiguration } from '../server/lib/auth.js';
+import { ApiError, fail } from '../server/lib/http.js';
 
 /** Vercel may consume JSON bodies before this function, so reconstruct a Web Request. */
 export function toAuthRequest(req: VercelRequest): Request {

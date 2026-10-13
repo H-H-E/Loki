@@ -1,6 +1,6 @@
 import type { VercelRequest } from '@vercel/node';
-import { ApiError, requireUser } from './http';
-import { getSql, isDatabaseConfigured } from './db';
+import { ApiError, requireUser } from './http.js';
+import { getSql, isDatabaseConfigured } from './db.js';
 export async function saveJobResult(req: VercelRequest, ownerId: string, projectId: string, baseVersion: number, jobId: string, result: unknown) {
   if (!isDatabaseConfigured()) throw new ApiError(503, 'Job recovery needs Neon configured.', 'JOB_STORAGE_NOT_CONFIGURED');
   const actor = await requireUser(req);
